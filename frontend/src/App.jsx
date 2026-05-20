@@ -7,7 +7,7 @@ import {
   Tooltip,
   BarChart,
   Bar,
-  LineChart,
+ LineChart,
   Line,
   XAxis,
   YAxis,
@@ -17,6 +17,8 @@ import {
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import "./App.css";
+
+const API_BASE = "https://ai-budget-tracker-backend.onrender.com";
 
 function App({ setIsLoggedIn }) {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -47,20 +49,20 @@ function App({ setIsLoggedIn }) {
 
   const fetchTransactions = async () => {
     const res = await axios.get(
-      `http://127.0.0.1:8000/transactions/${user.id}`
+      `${API_BASE}/transactions/${user.id}`
     );
     setTransactions(res.data);
   };
 
   const fetchSpendingPrediction = async () => {
     const res = await axios.get(
-      `http://127.0.0.1:8000/predict-spending/${user.id}`
+      `${API_BASE}/predict-spending/${user.id}`
     );
     setSpendingPrediction(res.data.message);
   };
 
   const fetchBudget = async () => {
-    const res = await axios.get("http://127.0.0.1:8000/budget");
+    const res = await axios.get(`${API_BASE}/budget`);
 
     if (res.data.monthly_limit) {
       setBudgetLimit(res.data.monthly_limit);
@@ -111,7 +113,7 @@ function App({ setIsLoggedIn }) {
       return;
     }
 
-    await axios.post("http://127.0.0.1:8000/budget", {
+    await axios.post(`${API_BASE}/budget`, {
       monthly_limit: parseFloat(budgetLimit),
     });
 
@@ -126,7 +128,7 @@ function App({ setIsLoggedIn }) {
 
     setAiStatus("AI is predicting category...");
 
-    const res = await axios.post("http://127.0.0.1:8000/predict-category", {
+    const res = await axios.post(`${API_BASE}/predict-category`, {
       title,
     });
 
@@ -143,7 +145,7 @@ function App({ setIsLoggedIn }) {
     formData.append("file", file);
 
     const res = await axios.post(
-      `http://127.0.0.1:8000/upload-statement/${user.id}`,
+      `${API_BASE}/upload-statement/${user.id}`,
       formData,
       {
         headers: {
@@ -165,12 +167,12 @@ function App({ setIsLoggedIn }) {
 
   const deleteLastUploadedStatement = async () => {
     if (!lastUploadId) {
-      alert("No uploaded statement found to delete");
+      alert("No uploaded statement found");
       return;
     }
 
     const res = await axios.delete(
-      `http://127.0.0.1:8000/upload-statement/${lastUploadId}`
+      `${API_BASE}/upload-statement/${lastUploadId}`
     );
 
     alert(res.data.message);
@@ -210,11 +212,14 @@ function App({ setIsLoggedIn }) {
 
     if (isEditing) {
       await axios.put(
-        `http://127.0.0.1:8000/transactions/${editingId}`,
+        `${API_BASE}/transactions/${editingId}`,
         transactionData
       );
     } else {
-      await axios.post("http://127.0.0.1:8000/transactions", transactionData);
+      await axios.post(
+        `${API_BASE}/transactions`,
+        transactionData
+      );
     }
 
     clearForm();
@@ -234,7 +239,7 @@ function App({ setIsLoggedIn }) {
   };
 
   const deleteTransaction = async (id) => {
-    await axios.delete(`http://127.0.0.1:8000/transactions/${id}`);
+    await axios.delete(`${API_BASE}/transactions/${id}`);
     fetchTransactions();
     fetchSpendingPrediction();
   };
@@ -245,7 +250,7 @@ function App({ setIsLoggedIn }) {
       return;
     }
 
-    const res = await axios.post("http://127.0.0.1:8000/chatbot", {
+    const res = await axios.post(`${API_BASE}/chatbot`, {
       message: chatMessage,
       user_id: user.id,
     });
@@ -268,13 +273,6 @@ function App({ setIsLoggedIn }) {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const balance = income - expenses;
-
-  const budgetExceeded = budgetLimit && expenses >= parseFloat(budgetLimit);
-
-  const budgetWarning =
-    budgetLimit &&
-    expenses >= parseFloat(budgetLimit) * 0.8 &&
-    expenses < parseFloat(budgetLimit);
 
   const expenseData = Object.values(
     transactions
@@ -309,22 +307,14 @@ function App({ setIsLoggedIn }) {
       }, {})
   );
 
-  const incomeExpenseData = [
-    { name: "Income", amount: income },
-    { name: "Expenses", amount: expenses },
-    { name: "Balance", amount: balance },
-  ];
-
   const filteredTransactions = transactions.filter((transaction) => {
-    const titleMatch = transaction.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
-    const categoryMatch = transaction.category
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
-    const matchesSearch = titleMatch || categoryMatch;
+    const matchesSearch =
+      transaction.title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      transaction.category
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     const matchesType =
       filterType === "All" || transaction.type === filterType;
@@ -335,7 +325,13 @@ function App({ setIsLoggedIn }) {
     return matchesSearch && matchesType && matchesMonth;
   });
 
-  const COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6"];
+  const COLORS = [
+    "#2563eb",
+    "#16a34a",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+  ];
 
   return (
     <div className="app" id="dashboard-report">
@@ -376,21 +372,13 @@ function App({ setIsLoggedIn }) {
         </div>
       </section>
 
-      {budgetWarning && (
-        <div className="budget-warning">
-          ⚠️ Warning: You used more than 80% of your monthly budget.
-        </div>
-      )}
-
-      {budgetExceeded && (
-        <div className="budget-danger">
-          🚨 Alert: You exceeded your monthly budget limit.
-        </div>
-      )}
-
       <section className="main-grid">
         <div className="form-card">
-          <h2>{isEditing ? "Edit Transaction" : "Add Transaction"}</h2>
+          <h2>
+            {isEditing
+              ? "Edit Transaction"
+              : "Add Transaction"}
+          </h2>
 
           <input
             placeholder="Title"
@@ -398,11 +386,16 @@ function App({ setIsLoggedIn }) {
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          <button className="ai-button" onClick={predictCategory}>
+          <button
+            className="ai-button"
+            onClick={predictCategory}
+          >
             Predict Category with AI
           </button>
 
-          {aiStatus && <p className="ai-status">{aiStatus}</p>}
+          {aiStatus && (
+            <p className="ai-status">{aiStatus}</p>
+          )}
 
           <input
             type="number"
@@ -424,7 +417,10 @@ function App({ setIsLoggedIn }) {
             onChange={(e) => setBudgetLimit(e.target.value)}
           />
 
-          <button className="save-budget-btn" onClick={saveBudget}>
+          <button
+            className="save-budget-btn"
+            onClick={saveBudget}
+          >
             Save Budget
           </button>
 
@@ -434,7 +430,10 @@ function App({ setIsLoggedIn }) {
             onChange={(e) => setCategory(e.target.value)}
           />
 
-          <select value={type} onChange={(e) => setType(e.target.value)}>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
             <option value="">Select Type</option>
             <option value="Income">Income</option>
             <option value="Expense">Expense</option>
@@ -462,11 +461,16 @@ function App({ setIsLoggedIn }) {
           </div>
 
           <button onClick={addTransaction}>
-            {isEditing ? "Update Transaction" : "Add Transaction"}
+            {isEditing
+              ? "Update Transaction"
+              : "Add Transaction"}
           </button>
 
           {isEditing && (
-            <button className="cancel-edit-btn" onClick={clearForm}>
+            <button
+              className="cancel-edit-btn"
+              onClick={clearForm}
+            >
               Cancel Edit
             </button>
           )}
@@ -474,10 +478,10 @@ function App({ setIsLoggedIn }) {
 
         <div className="insight-card">
           <h2>AI Financial Insights</h2>
-          <p>🤖 Total income: ${income}</p>
-          <p>🤖 Total expenses: ${expenses}</p>
-          <p>🤖 Current balance: ${balance}</p>
-          <p>🤖 {spendingPrediction}</p>
+          <p>Total income: ${income}</p>
+          <p>Total expenses: ${expenses}</p>
+          <p>Balance: ${balance}</p>
+          <p>{spendingPrediction}</p>
         </div>
       </section>
 
@@ -486,22 +490,26 @@ function App({ setIsLoggedIn }) {
 
         <div className="chat-box">
           {chatReply ? (
-            <p className="bot-reply">💬 {chatReply}</p>
+            <p className="bot-reply">{chatReply}</p>
           ) : (
             <p className="bot-message">
-              Ask AI about expenses, balance, income, or savings.
+              Ask AI about your finances
             </p>
           )}
         </div>
 
         <div className="chat-input-row">
           <input
-            placeholder="Ask your finance question..."
+            placeholder="Ask finance question..."
             value={chatMessage}
-            onChange={(e) => setChatMessage(e.target.value)}
+            onChange={(e) =>
+              setChatMessage(e.target.value)
+            }
           />
 
-          <button onClick={sendChatMessage}>Ask AI</button>
+          <button onClick={sendChatMessage}>
+            Ask AI
+          </button>
         </div>
       </section>
 
@@ -518,60 +526,60 @@ function App({ setIsLoggedIn }) {
               label
             >
               {expenseData.map((entry, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                <Cell
+                  key={index}
+                  fill={COLORS[index % COLORS.length]}
+                />
               ))}
             </Pie>
+
             <Tooltip />
           </PieChart>
         </div>
 
         <div className="chart-card">
-          <h2>Income vs Expense</h2>
-
-          <BarChart width={320} height={280} data={incomeExpenseData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="amount" fill="#2563eb" />
-          </BarChart>
-        </div>
-      </section>
-
-      <section className="charts">
-        <div className="chart-card">
           <h2>Monthly Expense Trend</h2>
 
-          <LineChart width={600} height={300} data={trendData}>
+          <LineChart
+            width={500}
+            height={280}
+            data={trendData}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
             <Tooltip />
             <Legend />
+
             <Line
               type="monotone"
               dataKey="amount"
-              stroke="#7c3aed"
+              stroke="#2563eb"
               strokeWidth={3}
             />
           </LineChart>
         </div>
       </section>
 
-      <h2 className="section-title">Transactions History</h2>
+      <h2 className="section-title">
+        Transactions History
+      </h2>
 
       <div className="filter-card">
         <input
           type="text"
-          placeholder="Search by title or category..."
+          placeholder="Search by title/category..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) =>
+            setSearchTerm(e.target.value)
+          }
         />
 
         <select
           value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
+          onChange={(e) =>
+            setFilterType(e.target.value)
+          }
         >
           <option value="All">All</option>
           <option value="Income">Income</option>
@@ -581,35 +589,50 @@ function App({ setIsLoggedIn }) {
         <input
           type="month"
           value={filterMonth}
-          onChange={(e) => setFilterMonth(e.target.value)}
+          onChange={(e) =>
+            setFilterMonth(e.target.value)
+          }
         />
       </div>
 
       <section className="transactions">
         {filteredTransactions.map((transaction) => (
-          <div className="transaction-card" key={transaction.id}>
+          <div
+            className="transaction-card"
+            key={transaction.id}
+          >
             <h3>{transaction.title}</h3>
+
             <p>
               <b>Amount:</b> ${transaction.amount}
             </p>
+
             <p>
-              <b>Date:</b> {transaction.date || "No date"}
+              <b>Date:</b> {transaction.date}
             </p>
+
             <p>
               <b>Category:</b> {transaction.category}
             </p>
+
             <p>
               <b>Type:</b> {transaction.type}
             </p>
 
             <button
               className="edit-btn"
-              onClick={() => editTransaction(transaction)}
+              onClick={() =>
+                editTransaction(transaction)
+              }
             >
               Edit
             </button>
 
-            <button onClick={() => deleteTransaction(transaction.id)}>
+            <button
+              onClick={() =>
+                deleteTransaction(transaction.id)
+              }
+            >
               Delete
             </button>
           </div>

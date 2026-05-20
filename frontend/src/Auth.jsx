@@ -2,6 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
+const API_BASE = "https://ai-budget-tracker-backend.onrender.com";
+
 function Auth({ setIsLoggedIn }) {
   const [isRegister, setIsRegister] = useState(true);
   const [name, setName] = useState("");
@@ -11,7 +13,7 @@ function Auth({ setIsLoggedIn }) {
   const handleSubmit = async () => {
     try {
       if (isRegister) {
-        const res = await axios.post("http://127.0.0.1:8000/register", {
+        const res = await axios.post(`${API_BASE}/register`, {
           name,
           email,
           password,
@@ -20,7 +22,7 @@ function Auth({ setIsLoggedIn }) {
         alert(res.data.message);
         setIsRegister(false);
       } else {
-        const res = await axios.post("http://127.0.0.1:8000/login", {
+        const res = await axios.post(`${API_BASE}/login`, {
           email,
           password,
         });
@@ -41,12 +43,19 @@ function Auth({ setIsLoggedIn }) {
     <div className="auth-page">
       <div className="auth-left">
         <h1>AI Budget Tracker</h1>
-        <p>Track expenses, predict spending, manage budgets, and get AI-powered financial insights.</p>
+        <p>
+          Track expenses, predict spending, manage budgets, and get AI-powered
+          financial insights.
+        </p>
       </div>
 
       <div className="auth-card">
         <h2>{isRegister ? "Create Account" : "Welcome Back"}</h2>
-        <p>{isRegister ? "Register to start managing your finance." : "Login to continue to your dashboard."}</p>
+        <p>
+          {isRegister
+            ? "Register to start managing your finance."
+            : "Login to continue to your dashboard."}
+        </p>
 
         {isRegister && (
           <input
