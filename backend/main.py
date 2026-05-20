@@ -22,8 +22,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://ai-budget-tracker-sigma.vercel.app",
+        "https://ai-budget-tracker-backend.onrender.com",
     ],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
