@@ -105,22 +105,6 @@ The application automatically extracts transactions and stores them in the datab
 
 # Screenshots
 
-Create a folder named:
-
-screenshots
-
-Add:
-- Login Page
-- Dashboard
-- AI Chatbot
-- Charts
-- PDF Export
-- Statement Upload
-
-Then include:
-
-# Screenshots
-
 ## Login Page
 ![Login](screenshots/login.png)
 
