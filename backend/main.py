@@ -19,7 +19,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://ai-budget-tracker-sigma.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -252,33 +255,20 @@ def chatbot(request: ChatRequest, db: Session = Depends(get_db)):
         if t.type.lower() == "expense"
     )
 
-    category_totals = {}
-
-    for t in transactions:
-        if t.type.lower() == "expense":
-            if t.category not in category_totals:
-                category_totals[t.category] = 0
-            category_totals[t.category] += t.amount
-
-    highest_category = None
-
-    if category_totals:
-        highest_category = max(category_totals, key=category_totals.get)
-
-    if "reduce" in message or "save" in message:
-        if highest_category:
-            return {
-                "reply": f"Your highest expense category is {highest_category}. Try reducing spending in this category to save more money."
-            }
-
     if "balance" in message:
-        return {"reply": f"Your current balance is ${total_income - total_expense}."}
+        return {
+            "reply": f"Your current balance is ${total_income - total_expense}."
+        }
 
     if "expense" in message:
-        return {"reply": f"Your total expenses are ${total_expense}."}
+        return {
+            "reply": f"Your total expenses are ${total_expense}."
+        }
 
     if "income" in message:
-        return {"reply": f"Your total income is ${total_income}."}
+        return {
+            "reply": f"Your total income is ${total_income}."
+        }
 
     return {
         "reply": "I can help you analyze expenses, savings, balance, and spending habits."
@@ -393,7 +383,9 @@ async def upload_statement(
                             .replace(",", "")
                             .replace("$", "")
                         )
+
                         title = " ".join(parts[1:-1])
+
                         category = predict_category(title)
 
                         transaction = TransactionModel(
