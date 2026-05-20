@@ -256,23 +256,42 @@ def chatbot(request: ChatRequest, db: Session = Depends(get_db)):
         if t.type.lower() == "expense"
     )
 
-    if "balance" in message:
+    balance = total_income - total_expense
+
+    category_totals = {}
+
+    for t in transactions:
+        if t.type.lower() == "expense":
+            category_totals[t.category] = category_totals.get(t.category, 0) + t.amount
+
+    highest_category = "your highest spending category"
+    highest_amount = 0
+
+    if category_totals:
+        highest_category = max(category_totals, key=category_totals.get)
+        highest_amount = category_totals[highest_category]
+
+    if "manage" in message or "advice" in message or "control" in message:
         return {
-            "reply": f"Your current balance is ${total_income - total_expense}."
+            "reply": f"To manage your expenses, first track your spending regularly. Your current expenses are ${total_expense}. Your highest spending category is {highest_category} with ${highest_amount}. Try setting a monthly limit, reducing unnecessary purchases, and reviewing your spending every week."
         }
 
-    if "expense" in message:
+    if "save" in message or "saving" in message or "reduce" in message:
         return {
-            "reply": f"Your total expenses are ${total_expense}."
+            "reply": f"To save more money, reduce spending in {highest_category}. Even cutting this category by 10–20% can improve your balance. Your current balance is ${balance}."
         }
+
+    if "balance" in message:
+        return {"reply": f"Your current balance is ${balance}."}
 
     if "income" in message:
-        return {
-            "reply": f"Your total income is ${total_income}."
-        }
+        return {"reply": f"Your total income is ${total_income}."}
+
+    if "expense" in message or "spending" in message:
+        return {"reply": f"Your total expenses are ${total_expense}."}
 
     return {
-        "reply": "I can help you analyze expenses, savings, balance, and spending habits."
+        "reply": "I can help you with income, expenses, balance, savings advice, and spending management."
     }
 
 
