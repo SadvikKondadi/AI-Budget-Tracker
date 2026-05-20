@@ -119,13 +119,30 @@ Add:
 
 Then include:
 
-## Screenshots
+# Screenshots
 
-![Dashboard](screenshots/dashboard.png)
+## Login Page
+![Login](screenshots/login.png)
 
+---
+
+## Dashboard Overview
+![Dashboard1](screenshots/dashboard1.png)
+
+---
+
+## Financial Charts & Analytics
+![Dashboard2](screenshots/dashboard2.png)
+
+---
+
+## AI Financial Chatbot
 ![Chatbot](screenshots/chatbot.png)
 
-![Charts](screenshots/charts.png)
+---
+
+## Transactions Management
+![Transactions](screenshots/transactions.png)
 
 ---
 
