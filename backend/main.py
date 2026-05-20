@@ -238,7 +238,7 @@ def predict_spending(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/chatbot")
 def chatbot(request: ChatRequest, db: Session = Depends(get_db)):
-    message = request.message.lower()
+    message = request.message.lower().strip()
 
     transactions = (
         db.query(TransactionModel)
@@ -264,21 +264,52 @@ def chatbot(request: ChatRequest, db: Session = Depends(get_db)):
         if t.type.lower() == "expense":
             category_totals[t.category] = category_totals.get(t.category, 0) + t.amount
 
-    highest_category = "your highest spending category"
+    highest_category = "None"
     highest_amount = 0
 
     if category_totals:
         highest_category = max(category_totals, key=category_totals.get)
         highest_amount = category_totals[highest_category]
 
-    if "manage" in message or "advice" in message or "control" in message:
+    manage_phrases = [
+        "how should i manage",
+        "manage my expenses",
+        "manage expenses",
+        "control my expenses",
+        "control expenses",
+        "spending advice",
+        "expense advice",
+        "financial advice",
+        "how to manage",
+    ]
+
+    save_phrases = [
+        "save more",
+        "save money",
+        "how can i save",
+        "reduce spending",
+        "reduce expenses",
+        "cut expenses",
+    ]
+
+    if any(phrase in message for phrase in manage_phrases):
+        if total_expense == 0:
+            return {
+                "reply": "You do not have expense data yet. Add expenses first so I can give better management advice."
+            }
+
         return {
-            "reply": f"To manage your expenses, first track your spending regularly. Your current expenses are ${total_expense}. Your highest spending category is {highest_category} with ${highest_amount}. Try setting a monthly limit, reducing unnecessary purchases, and reviewing your spending every week."
+            "reply": f"To manage your expenses, review your spending weekly and set limits by category. Your current total expenses are ${total_expense}. Your highest spending category is {highest_category} with ${highest_amount}. Start by reducing unnecessary spending in {highest_category}, set a monthly budget, and avoid impulse purchases."
         }
 
-    if "save" in message or "saving" in message or "reduce" in message:
+    if any(phrase in message for phrase in save_phrases):
+        if total_expense == 0:
+            return {
+                "reply": "You do not have expenses yet. Add expenses first so I can suggest saving opportunities."
+            }
+
         return {
-            "reply": f"To save more money, reduce spending in {highest_category}. Even cutting this category by 10–20% can improve your balance. Your current balance is ${balance}."
+            "reply": f"To save more money, reduce your biggest category first: {highest_category} (${highest_amount}). Try cutting it by 10–20%, avoid non-essential purchases, and keep your balance positive. Your current balance is ${balance}."
         }
 
     if "balance" in message:
@@ -287,13 +318,12 @@ def chatbot(request: ChatRequest, db: Session = Depends(get_db)):
     if "income" in message:
         return {"reply": f"Your total income is ${total_income}."}
 
-    if "expense" in message or "spending" in message:
+    if "expense" in message or "expenses" in message or "spending" in message:
         return {"reply": f"Your total expenses are ${total_expense}."}
 
     return {
-        "reply": "I can help you with income, expenses, balance, savings advice, and spending management."
+        "reply": "I can help you with income, expenses, balance, savings advice, and expense management."
     }
-
 
 @app.post("/budget")
 def save_budget(request: BudgetRequest, db: Session = Depends(get_db)):
