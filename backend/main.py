@@ -8,6 +8,10 @@ import pandas as pd
 import pdfplumber
 import io
 import uuid
+import random
+import smtplib
+import os
+from email.mime.text import MIMEText
 
 from database import engine, SessionLocal
 from models import Base, User, Transaction as TransactionModel, Budget
@@ -30,6 +34,7 @@ app.add_middleware(
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+otp_store = {}
 
 
 class RegisterRequest(BaseModel):
@@ -43,8 +48,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class ResetPasswordRequest(BaseModel):
+class SendOTPRequest(BaseModel):
     email: str
+
+
+class VerifyOTPRequest(BaseModel):
+    email: str
+    otp: str
     new_password: str
 
 
@@ -125,17 +135,61 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     }
 
 
-@app.post("/reset-password")
-def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+@app.post("/send-otp")
+def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
         return {"message": "Email not found"}
 
-    hashed_password = pwd_context.hash(request.new_password)
-    user.password = hashed_password
+    otp = str(random.randint(100000, 999999))
+    otp_store[request.email] = otp
 
+    sender_email = os.getenv("EMAIL_USER")
+    sender_password = os.getenv("EMAIL_PASS")
+
+    if not sender_email or not sender_password:
+        return {"message": "Email service not configured"}
+
+    msg = MIMEText(f"Your AI Budget Tracker password reset OTP is: {otp}")
+    msg["Subject"] = "AI Budget Tracker Password Reset OTP"
+    msg["From"] = sender_email
+    msg["To"] = request.email
+
+    try:
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, request.email, msg.as_string())
+        server.quit()
+
+        return {"message": "OTP sent successfully"}
+
+    except Exception as e:
+        return {"message": f"Failed to send OTP: {str(e)}"}
+
+
+@app.post("/verify-otp-reset-password")
+def verify_otp_reset_password(
+    request: VerifyOTPRequest,
+    db: Session = Depends(get_db),
+):
+    stored_otp = otp_store.get(request.email)
+
+    if not stored_otp:
+        return {"message": "OTP expired or not found"}
+
+    if stored_otp != request.otp:
+        return {"message": "Invalid OTP"}
+
+    user = db.query(User).filter(User.email == request.email).first()
+
+    if not user:
+        return {"message": "Email not found"}
+
+    user.password = pwd_context.hash(request.new_password)
     db.commit()
+
+    del otp_store[request.email]
 
     return {"message": "Password reset successful"}
 
@@ -247,8 +301,7 @@ def predict_spending(user_id: int, db: Session = Depends(get_db)):
             "message": "No expense data available for prediction.",
         }
 
-    average_expense = sum(expenses) / len(expenses)
-    predicted_spending = average_expense * len(expenses)
+    predicted_spending = sum(expenses)
 
     return {
         "predicted_spending": round(predicted_spending, 2),
@@ -456,7 +509,6 @@ async def upload_statement(
                         )
 
                         title = " ".join(parts[1:-1])
-
                         category = predict_category(title)
 
                         transaction = TransactionModel(
