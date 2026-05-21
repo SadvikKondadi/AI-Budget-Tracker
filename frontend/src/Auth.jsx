@@ -7,41 +7,39 @@ const API_BASE = "https://ai-budget-tracker-backend.onrender.com";
 function Auth({ setIsLoggedIn }) {
   const [isRegister, setIsRegister] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
   const handleSubmit = async () => {
     try {
       if (isRegister) {
-        const res = await axios.post(`${API_BASE}/register`, {
+        const response = await axios.post(`${API_BASE}/register`, {
           name,
           email,
           password,
         });
 
-        alert(res.data.message);
+        alert(response.data.message);
 
-        if (res.data.message === "User registered successfully") {
+        if (response.data.message === "User registered successfully") {
           setIsRegister(false);
         }
       } else {
-        const res = await axios.post(`${API_BASE}/login`, {
+        const response = await axios.post(`${API_BASE}/login`, {
           email,
           password,
         });
 
-        if (res.data.message === "Login successful") {
-          localStorage.setItem("user", JSON.stringify(res.data.user));
+        if (response.data.message === "Login successful") {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
           setIsLoggedIn(true);
         } else {
-          alert(res.data.message);
+          alert(response.data.message);
         }
       }
     } catch (error) {
@@ -49,58 +47,22 @@ function Auth({ setIsLoggedIn }) {
     }
   };
 
-  const sendOTP = async () => {
-  
-  if (!email) {
-    alert("Enter your email first");
-    return;
-  }
-
-  try {
-    const response = await axios.post(
-      "https://ai-budget-tracker-backend.onrender.com/send-otp",
-      {
-        email: email,
-      }
-    );
-
-    console.log(response.data);
-
-    alert(response.data.message);
-
-    if (response.data.message === "OTP sent successfully") {
-      setOtpSent(true);
-    }
-
-  } catch (error) {
-    console.log(error);
-
-    if (error.response) {
-      alert(error.response.data.message);
-    } else {
-      alert("Backend connection failed");
-    }
-  }
-};
-  const resetPasswordWithOTP = async () => {
-    if (!email || !otp || !newPassword) {
-      alert("Enter email, OTP, and new password");
+  const resetPassword = async () => {
+    if (!email || !newPassword) {
+      alert("Please enter email and new password");
       return;
     }
 
     try {
-      const res = await axios.post(`${API_BASE}/verify-otp-reset-password`, {
+      const response = await axios.post(`${API_BASE}/reset-password`, {
         email,
-        otp,
         new_password: newPassword,
       });
 
-      alert(res.data.message);
+      alert(response.data.message);
 
-      if (res.data.message === "Password reset successful") {
+      if (response.data.message === "Password reset successful") {
         setShowForgotPassword(false);
-        setOtpSent(false);
-        setOtp("");
         setNewPassword("");
         setPassword("");
         setIsRegister(false);
@@ -112,9 +74,8 @@ function Auth({ setIsLoggedIn }) {
 
   const backToLogin = () => {
     setShowForgotPassword(false);
-    setOtpSent(false);
-    setOtp("");
     setNewPassword("");
+    setPassword("");
     setIsRegister(false);
   };
 
@@ -199,7 +160,7 @@ function Auth({ setIsLoggedIn }) {
           <>
             <h2>Reset Password</h2>
 
-            <p>Enter your email, receive OTP, and create a new password.</p>
+            <p>Enter your email and create a new password.</p>
 
             <input
               type="email"
@@ -208,38 +169,23 @@ function Auth({ setIsLoggedIn }) {
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            {!otpSent ? (
-              <button onClick={sendOTP}>Send OTP</button>
-            ) : (
-              <>
-                <input
-                  type="text"
-                  placeholder="Enter OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
+            <div className="password-box">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
 
-                <div className="password-box">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="New Password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
+              <span
+                className="eye-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁"}
+              </span>
+            </div>
 
-                  <span
-                    className="eye-icon"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? "🙈" : "👁"}
-                  </span>
-                </div>
-
-                <button onClick={resetPasswordWithOTP}>
-                  Reset Password
-                </button>
-              </>
-            )}
+            <button onClick={resetPassword}>Reset Password</button>
 
             <button className="back-login-btn" onClick={backToLogin}>
               ← Back to Login

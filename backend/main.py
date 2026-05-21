@@ -8,10 +8,6 @@ import pandas as pd
 import pdfplumber
 import io
 import uuid
-import random
-import smtplib
-import os
-from email.mime.text import MIMEText
 
 from database import engine, SessionLocal
 from models import Base, User, Transaction as TransactionModel, Budget
@@ -30,7 +26,6 @@ app.add_middleware(
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-otp_store = {}
 
 
 class RegisterRequest(BaseModel):
@@ -44,13 +39,8 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class SendOTPRequest(BaseModel):
+class ResetPasswordRequest(BaseModel):
     email: str
-
-
-class VerifyOTPRequest(BaseModel):
-    email: str
-    otp: str
     new_password: str
 
 
@@ -131,45 +121,8 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     }
 
 
-@app.post("/send-otp")
-def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
-    otp = str(random.randint(100000, 999999))
-
-    otp_store[request.email] = otp
-
-    try:
-        sender_email = os.getenv("EMAIL_USER")
-        sender_password = os.getenv("EMAIL_PASS")
-
-        msg = MIMEText(f"Your OTP for password reset is: {otp}")
-        msg["Subject"] = "AI Budget Tracker OTP"
-        msg["From"] = sender_email
-        msg["To"] = request.email
-
-        server = smtplib.SMTP("smtp-relay.brevo.com", 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, request.email, msg.as_string())
-        server.quit()
-
-        return {"message": "OTP sent successfully"}
-
-    except Exception as e:
-        return {"message": f"Failed to send OTP: {str(e)}"}
-
-@app.post("/verify-otp-reset-password")
-def verify_otp_reset_password(
-    request: VerifyOTPRequest,
-    db: Session = Depends(get_db),
-):
-    stored_otp = otp_store.get(request.email)
-
-    if not stored_otp:
-        return {"message": "OTP expired or not found"}
-
-    if stored_otp != request.otp:
-        return {"message": "Invalid OTP"}
-
+@app.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
@@ -177,8 +130,6 @@ def verify_otp_reset_password(
 
     user.password = pwd_context.hash(request.new_password)
     db.commit()
-
-    del otp_store[request.email]
 
     return {"message": "Password reset successful"}
 
