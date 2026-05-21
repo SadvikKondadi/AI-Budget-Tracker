@@ -43,6 +43,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+
+
 class Transaction(BaseModel):
     title: str
     amount: float
@@ -118,6 +123,21 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             "email": user.email,
         },
     }
+
+
+@app.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+
+    if not user:
+        return {"message": "Email not found"}
+
+    hashed_password = pwd_context.hash(request.new_password)
+    user.password = hashed_password
+
+    db.commit()
+
+    return {"message": "Password reset successful"}
 
 
 @app.post("/transactions")
@@ -324,6 +344,7 @@ def chatbot(request: ChatRequest, db: Session = Depends(get_db)):
     return {
         "reply": "I can help you with income, expenses, balance, savings advice, and expense management."
     }
+
 
 @app.post("/budget")
 def save_budget(request: BudgetRequest, db: Session = Depends(get_db)):

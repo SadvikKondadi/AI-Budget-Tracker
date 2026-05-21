@@ -669,3 +669,30 @@ button {
     grid-template-columns: 1fr;
   }
 }
+.password-box {
+  position: relative;
+  width: 100%;
+}
+
+.password-box input {
+  width: 100%;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 14px;
+  top: 13px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.forgot-password {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}

@@ -6,9 +6,15 @@ const API_BASE = "https://ai-budget-tracker-backend.onrender.com";
 
 function Auth({ setIsLoggedIn }) {
   const [isRegister, setIsRegister] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [newPassword, setNewPassword] = useState("");
 
   const handleSubmit = async () => {
     try {
@@ -20,7 +26,10 @@ function Auth({ setIsLoggedIn }) {
         });
 
         alert(res.data.message);
-        setIsRegister(false);
+
+        if (res.data.message === "User registered successfully") {
+          setIsRegister(false);
+        }
       } else {
         const res = await axios.post(`${API_BASE}/login`, {
           email,
@@ -39,57 +48,146 @@ function Auth({ setIsLoggedIn }) {
     }
   };
 
+  const resetPassword = async () => {
+    if (!email || !newPassword) {
+      alert("Please enter email and new password");
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE}/reset-password`, {
+        email,
+        new_password: newPassword,
+      });
+
+      alert(res.data.message);
+
+      if (res.data.message === "Password reset successful") {
+        setShowForgotPassword(false);
+        setPassword("");
+        setNewPassword("");
+      }
+    } catch (error) {
+      alert("Reset password failed");
+    }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-left">
         <h1>AI Budget Tracker</h1>
+
         <p>
-          Track expenses, predict spending, manage budgets, and get AI-powered
-          financial insights.
+          Manage expenses, upload bank statements, track spending trends, and
+          get AI-powered financial insights.
         </p>
       </div>
 
       <div className="auth-card">
-        <h2>{isRegister ? "Create Account" : "Welcome Back"}</h2>
-        <p>
-          {isRegister
-            ? "Register to start managing your finance."
-            : "Login to continue to your dashboard."}
-        </p>
+        {!showForgotPassword ? (
+          <>
+            <h2>{isRegister ? "Create Account" : "Welcome Back"}</h2>
 
-        {isRegister && (
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+            <p>
+              {isRegister
+                ? "Register to start managing your finance."
+                : "Login to continue to your dashboard."}
+            </p>
+
+            {isRegister && (
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            )}
+
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <div className="password-box">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <span
+                className="eye-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁"}
+              </span>
+            </div>
+
+            <button onClick={handleSubmit}>
+              {isRegister ? "Register" : "Login"}
+            </button>
+
+            {!isRegister && (
+              <p
+                className="forgot-password"
+                onClick={() => setShowForgotPassword(true)}
+              >
+                Forgot Password?
+              </p>
+            )}
+
+            <p className="switch-auth">
+              {isRegister
+                ? "Already have an account?"
+                : "Don't have an account?"}
+
+              <span onClick={() => setIsRegister(!isRegister)}>
+                {isRegister ? " Login" : " Register"}
+              </span>
+            </p>
+          </>
+        ) : (
+          <>
+            <h2>Reset Password</h2>
+
+            <p>Enter your email and create a new password.</p>
+
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <div className="password-box">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+
+              <span
+                className="eye-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "🙈" : "👁"}
+              </span>
+            </div>
+
+            <button onClick={resetPassword}>Reset Password</button>
+
+            <p
+              className="switch-auth"
+              onClick={() => setShowForgotPassword(false)}
+            >
+              ← Back to Login
+            </p>
+          </>
         )}
-
-        <input
-          type="email"
-          placeholder="Email Address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button onClick={handleSubmit}>
-          {isRegister ? "Register" : "Login"}
-        </button>
-
-        <p className="switch-auth">
-          {isRegister ? "Already have an account?" : "Don't have an account?"}
-          <span onClick={() => setIsRegister(!isRegister)}>
-            {isRegister ? " Login" : " Register"}
-          </span>
-        </p>
       </div>
     </div>
   );
