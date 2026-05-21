@@ -136,7 +136,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/send-otp")
-def send_otp(request: OTPRequest):
+def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
     otp = str(random.randint(100000, 999999))
 
     otp_store[request.email] = otp
