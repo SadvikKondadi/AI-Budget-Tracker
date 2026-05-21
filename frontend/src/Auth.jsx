@@ -58,18 +58,29 @@ function Auth({ setIsLoggedIn }) {
   }
 
   try {
-    const res = await axios.post(`${API_BASE}/send-otp`, {
-      email,
-    });
+    const response = await axios.post(
+      "https://ai-budget-tracker-backend.onrender.com/send-otp",
+      {
+        email: email,
+      }
+    );
 
-    alert(res.data.message);
+    console.log(response.data);
 
-    if (res.data.message === "OTP sent successfully") {
+    alert(response.data.message);
+
+    if (response.data.message === "OTP sent successfully") {
       setOtpSent(true);
     }
+
   } catch (error) {
     console.log(error);
-    alert(error.response?.data?.message || "Failed to send OTP");
+
+    if (error.response) {
+      alert(error.response.data.message);
+    } else {
+      alert("Backend connection failed");
+    }
   }
 };
   const resetPasswordWithOTP = async () => {
