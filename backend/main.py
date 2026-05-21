@@ -136,28 +136,22 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/send-otp")
-def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
-
-    if not user:
-        return {"message": "Email not found"}
-
+def send_otp(request: OTPRequest):
     otp = str(random.randint(100000, 999999))
+
     otp_store[request.email] = otp
 
-    sender_email = os.getenv("EMAIL_USER")
-    sender_password = os.getenv("EMAIL_PASS")
-
-    if not sender_email or not sender_password:
-        return {"message": "Email service not configured"}
-
-    msg = MIMEText(f"Your AI Budget Tracker password reset OTP is: {otp}")
-    msg["Subject"] = "AI Budget Tracker Password Reset OTP"
-    msg["From"] = sender_email
-    msg["To"] = request.email
-
     try:
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        sender_email = os.getenv("EMAIL_USER")
+        sender_password = os.getenv("EMAIL_PASS")
+
+        msg = MIMEText(f"Your OTP for password reset is: {otp}")
+        msg["Subject"] = "AI Budget Tracker OTP"
+        msg["From"] = sender_email
+        msg["To"] = request.email
+
+        server = smtplib.SMTP("smtp-relay.brevo.com", 587)
+        server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, request.email, msg.as_string())
         server.quit()
@@ -166,7 +160,6 @@ def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
 
     except Exception as e:
         return {"message": f"Failed to send OTP: {str(e)}"}
-
 
 @app.post("/verify-otp-reset-password")
 def verify_otp_reset_password(
