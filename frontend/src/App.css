@@ -696,3 +696,18 @@ button {
 .forgot-password:hover {
   text-decoration: underline;
 }
+.back-login-btn {
+  margin-top: 18px;
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.back-login-btn:hover {
+  color: #7c3aed;
+  transform: translateX(-2px);
+}

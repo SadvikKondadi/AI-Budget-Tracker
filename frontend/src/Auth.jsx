@@ -180,12 +180,12 @@ function Auth({ setIsLoggedIn }) {
 
             <button onClick={resetPassword}>Reset Password</button>
 
-            <p
+            <button
               className="switch-auth"
               onClick={() => setShowForgotPassword(false)}
             >
               ← Back to Login
-            </p>
+            </button>
           </>
         )}
       </div>
