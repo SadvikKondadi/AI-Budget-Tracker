@@ -50,26 +50,28 @@ function Auth({ setIsLoggedIn }) {
   };
 
   const sendOTP = async () => {
-    if (!email) {
-      alert("Enter your email first");
-      return;
+  alert("Send OTP clicked");
+
+  if (!email) {
+    alert("Enter your email first");
+    return;
+  }
+
+  try {
+    const res = await axios.post(`${API_BASE}/send-otp`, {
+      email,
+    });
+
+    alert(res.data.message);
+
+    if (res.data.message === "OTP sent successfully") {
+      setOtpSent(true);
     }
-
-    try {
-      const res = await axios.post(`${API_BASE}/send-otp`, {
-        email,
-      });
-
-      alert(res.data.message);
-
-      if (res.data.message === "OTP sent successfully") {
-        setOtpSent(true);
-      }
-    } catch (error) {
-      alert("Failed to send OTP");
-    }
-  };
-
+  } catch (error) {
+    console.log(error);
+    alert(error.response?.data?.message || "Failed to send OTP");
+  }
+};
   const resetPasswordWithOTP = async () => {
     if (!email || !otp || !newPassword) {
       alert("Enter email, OTP, and new password");
