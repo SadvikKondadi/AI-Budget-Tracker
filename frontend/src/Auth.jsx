@@ -50,8 +50,7 @@ function Auth({ setIsLoggedIn }) {
   };
 
   const sendOTP = async () => {
-  alert("Send OTP clicked");
-
+  
   if (!email) {
     alert("Enter your email first");
     return;
